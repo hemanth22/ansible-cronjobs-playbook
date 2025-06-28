@@ -1,0 +1,7 @@
+---
+backup_dir: "/tmp/{{ CHANGE_ID }}"
+CHANGE_ID: "{{ lookup('env', 'CHANGE_ID') | default('CHG123456789', True) }}"
+deployment_backup_filename: "{{ lookup('env', 'DEPLOYMENT_BACKUP_FILENAME') | default('deployment_crontab_backup_28062025_1633.txt', True) }}"
+deployment_backup_file_creation: "{{ backup_dir }}/{{ deployment_backup_filename }}"
+rollback_backup_filename: "{{ lookup('env', 'DEPLOYMENT_ROLLBACK_FILENAME') | default('deployment_crontab_rollback_28062025_1633.txt', True) }}"
+rollback_backup_file_creation: "{{ backup_dir }}/{{ rollback_backup_filename }}"

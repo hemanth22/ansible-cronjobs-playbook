@@ -1,0 +1,12 @@
+- name: Add a cron job to run a script every day at 2am
+  ansible.builtin.cron:
+    name: "daily_script"
+    minute: "0"
+    hour: "2"
+    job: "/usr/local/bin/myscript.sh"
+    state: present
+
+- name: Disable the cron job
+  ansible.builtin.cron:
+    name: "daily_script"
+    state: absent

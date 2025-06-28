@@ -1,0 +1,143 @@
+---
+- name: deployment of cronjobs
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yaml
+
+  tasks:
+    - name: Check if directory exists
+      ansible.builtin.stat:
+        path: "{{ backup_dir }}"
+      register: dir_stat
+      tags:
+       - deploy
+       - rollback
+
+    - name: Show result if directory exists
+      ansible.builtin.debug:
+        msg: "Directory exists at {{ backup_dir }}"
+      when: dir_stat.stat.exists and dir_stat.stat.isdir
+      tags:
+       - deploy
+       - rollback
+
+    - name: Ensure to create "{{ backup_dir }}" directory"
+      ansible.builtin.file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+      when: not dir_stat.stat.exists
+      tags:
+       - deploy
+       - rollback
+
+    - name: Check if deployment backup file exists
+      ansible.builtin.stat:
+        path: "{{ deployment_backup_file_creation }}"
+      register: backup_file_stat
+      tags:
+       - deploy
+
+    - name: Show result if deployment backup file exists
+      ansible.builtin.debug:
+        msg: "Deployment backup file exists at {{ deployment_backup_file_creation }}"
+      when: backup_file_stat.stat.exists
+      tags:
+       - deploy
+
+    - name: create a deployment backup file at "{{ deployment_backup_file_creation }}"
+      ansible.builtin.file:
+        path: "{{ deployment_backup_file_creation }}"
+        state: touch
+        mode: '0755'
+      when: not backup_file_stat.stat.exists
+      tags:
+       - deploy
+
+    - name: Run crontab -l and allow errors
+      ansible.builtin.command: crontab -l
+      register: crontab_output
+      failed_when: false
+      when: not backup_file_stat.stat.exists
+      tags:
+       - deploy
+
+    - name: Save crontab output to file (even if empty)
+      ansible.builtin.copy:
+        content: "{{ crontab_output.stdout | default('# No crontab for this user\n', True) + '\n' }}"
+        dest: "{{ deployment_backup_file_creation }}"
+        mode: '0644'
+      when: not backup_file_stat.stat.exists
+      tags:
+       - deploy
+
+    - name: Creates a cron job
+      ansible.builtin.cron:
+        name: "Log current date every minute"
+        minute: "*"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        user: root
+        job: "/usr/bin/date >> /tmp/date_log2.txt"
+        state: present
+      when: not backup_file_stat.stat.exists
+      tags:
+       - deploy
+
+    - name: Check if rollback backup file exists
+      ansible.builtin.stat:
+        path: "{{ rollback_backup_file_creation }}"
+      register: rollback_file_stat
+      tags:
+       - rollback
+
+    - name: Show result if rollback backup file exists
+      ansible.builtin.debug:
+        msg: "Rollback backup file exists at {{ rollback_backup_file_creation }}"
+      when: rollback_file_stat.stat.exists
+      tags:
+       - rollback
+
+    - name: create a rollback backup file at "{{ rollback_backup_file_creation }}"
+      ansible.builtin.file:
+        path: "{{ rollback_backup_file_creation }}"
+        state: touch
+        mode: '0755'
+      when: not rollback_file_stat.stat.exists
+      tags:
+       - rollback
+
+    - name: Run crontab -l and allow errors
+      ansible.builtin.command: crontab -l
+      register: crontab_output
+      failed_when: false
+      when: not rollback_file_stat.stat.exists
+      tags:
+       - rollback
+
+    - name: Save crontab output to file (even if empty)
+      ansible.builtin.copy:
+        content: "{{ crontab_output.stdout | default('# No crontab for this user\n', True) + '\n' }}"
+        dest: "{{ rollback_backup_file_creation }}"
+        mode: '0644'
+      when: not rollback_file_stat.stat.exists
+      tags:
+       - rollback
+
+    - name: Creates a cron job
+      ansible.builtin.cron:
+        name: "Log current date every minute"
+        minute: "*"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        user: root
+        job: "/usr/bin/date >> /tmp/date_log2.txt"
+        state: absent
+      when: not rollback_file_stat.stat.exists
+      tags:
+       - rollback
