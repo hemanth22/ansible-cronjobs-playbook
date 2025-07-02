@@ -5,3 +5,11 @@ deployment_backup_filename: "{{ lookup('env', 'DEPLOYMENT_BACKUP_FILENAME') | de
 deployment_backup_file_creation: "{{ backup_dir }}/{{ deployment_backup_filename }}"
 rollback_backup_filename: "{{ lookup('env', 'DEPLOYMENT_ROLLBACK_FILENAME') | default('deployment_crontab_rollback_28062025_1633.txt', True) }}"
 rollback_backup_file_creation: "{{ backup_dir }}/{{ rollback_backup_filename }}"
+CRON_MINUTE: "{{ lookup('env', 'CRON_MINUTE') | default('*', True) }}"
+CRON_HOUR: "{{ lookup('env', 'CRON_HOUR') | default('0', True) }}"
+CRON_DAY: "{{ lookup('env', 'CRON_DAY') | default('*', True) }}"
+CRON_MONTH: "{{ lookup('env', 'CRON_MONTH') | default('*', True) }}"
+CRON_WEEKDAY: "{{ lookup('env', 'CRON_WEEKDAY') | default('*', True) }}"
+CRON_USER: "{{ lookup('env', 'CRON_USER') | default('root', True) }}"
+CRON_JOB: "{{ lookup('env', 'CRON_JOB') | default('/usr/bin/date >> /tmp/date_log2.txt', True) }}"
+

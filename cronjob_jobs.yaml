@@ -75,15 +75,28 @@
     - name: Creates a cron job
       ansible.builtin.cron:
         name: "Log current date every minute"
-        minute: "*"
-        hour: "*"
-        day: "*"
-        month: "*"
-        weekday: "*"
-        user: root
-        job: "/usr/bin/date >> /tmp/date_log2.txt"
+        minute: "{{ CRON_MINUTE }}"
+        hour: "{{ CRON_HOUR }}"
+        day: "{{ CRON_DAY }}"
+        month: "{{ CRON_MONTH }}"
+        weekday: "{{ CRON_WEEKDAY }}"
+        user: "{{ CRON_USER }}"
+        job: "{{ CRON_JOB}}"
         state: present
       when: not backup_file_stat.stat.exists
+      tags:
+       - deploy
+
+    - name: Post Deployment Verification
+      ansible.builtin.command: crontab -l
+      register: postverification_crontab_output
+      ignore_errors: true
+      tags:
+       - deploy
+
+    - name: Show crontab output
+      ansible.builtin.debug:
+        var: postverification_crontab_output.stdout_lines
       tags:
        - deploy
 
@@ -139,5 +152,18 @@
         job: "/usr/bin/date >> /tmp/date_log2.txt"
         state: absent
       when: not rollback_file_stat.stat.exists
+      tags:
+       - rollback
+
+    - name: Post Rollback Verification
+      ansible.builtin.command: crontab -l
+      register: rollback_postverification_crontab_output
+      ignore_errors: true
+      tags:
+       - rollback
+
+    - name: Show crontab output
+      ansible.builtin.debug:
+        var: rollback_postverification_crontab_output.stdout_lines
       tags:
        - rollback
