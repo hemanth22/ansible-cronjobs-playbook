@@ -1,0 +1,40 @@
+---
+- name: Custom Ansible Playbook for Hostname and Cronjobs Diff
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Get the hostname
+      command: hostname
+      register: custom_hostname
+
+    - name: Set custom_hostname fact (strip whitespace)
+      set_fact:
+        custom_hostname: "{{ custom_hostname.stdout | trim }}"
+
+    - name: Ensure /tmp/CHG123456789 directory exists
+      file:
+        path: /tmp/CHG123456789
+        state: directory
+        mode: '0755'
+
+    - name: Create cronjobs_before.txt (empty or dummy content)
+      copy:
+        dest: "/tmp/CHG123456789/cronjobs_{{ custom_hostname }}_before.txt"
+        content: "# Before cronjobs for host {{ custom_hostname }}\n"
+
+    - name: Create cronjobs_after.txt (empty or dummy content)
+      copy:
+        dest: "/tmp/CHG123456789/cronjobs_{{ custom_hostname }}_after.txt"
+        content: "# After cronjobs for host {{ custom_hostname }}\n"
+
+    - name: Run sdiff between before and after files
+      command: >
+        sdiff /tmp/CHG123456789/cronjobs_{{ custom_hostname }}_before.txt
+              /tmp/CHG123456789/cronjobs_{{ custom_hostname }}_after.txt
+      register: sdiff_output
+      ignore_errors: true
+
+    - name: Show sdiff result
+      debug:
+        var: sdiff_output.stdout
