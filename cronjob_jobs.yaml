@@ -32,45 +32,36 @@
        - deploy
        - rollback
 
-    - name: Check if deployment backup file exists
-      ansible.builtin.stat:
-        path: "{{ deployment_backup_file_creation }}"
-      register: backup_file_stat
+    - name: Get the hostname
+      command: hostname
+      register: custom_hostname
       tags:
        - deploy
-
-    - name: Show result if deployment backup file exists
-      ansible.builtin.debug:
-        msg: "Deployment backup file exists at {{ deployment_backup_file_creation }}"
-      when: backup_file_stat.stat.exists
-      tags:
-       - deploy
-
-    - name: create a deployment backup file at "{{ deployment_backup_file_creation }}"
-      ansible.builtin.file:
-        path: "{{ deployment_backup_file_creation }}"
-        state: touch
-        mode: '0755'
-      when: not backup_file_stat.stat.exists
-      tags:
-       - deploy
+       - rollback
 
     - name: Run crontab -l and allow errors
       ansible.builtin.command: crontab -l
       register: crontab_output
       failed_when: false
-      when: not backup_file_stat.stat.exists
+      tags:
+       - deploy
+       - rollback
+
+    - name: Save crontab output to file (even if empty) for deployment
+      ansible.builtin.copy:
+        content: "{{ crontab_output.stdout | default('# No crontab for this user\n', True) + '\n' }}"
+        dest: "deploy_crontab_{{ custom_hostname.stdout }}_before.txt"
+        mode: '0644'
       tags:
        - deploy
 
-    - name: Save crontab output to file (even if empty)
+    - name: Save crontab output to file (even if empty) for rollback
       ansible.builtin.copy:
         content: "{{ crontab_output.stdout | default('# No crontab for this user\n', True) + '\n' }}"
-        dest: "{{ deployment_backup_file_creation }}"
+        dest: "rollback_crontab_{{ custom_hostname.stdout }}_before.txt"
         mode: '0644'
-      when: not backup_file_stat.stat.exists
       tags:
-       - deploy
+       - rollback
 
     - name: Creates a cron job
       ansible.builtin.cron:
@@ -83,87 +74,43 @@
         user: "{{ CRON_USER }}"
         job: "{{ CRON_JOB}}"
         state: present
-      when: not backup_file_stat.stat.exists
       tags:
        - deploy
+
+    - name: Removes a cron job
+      ansible.builtin.cron:
+        name: "Log current date every minute"
+        minute: "{{ CRON_MINUTE }}"
+        hour: "{{ CRON_HOUR }}"
+        day: "{{ CRON_DAY }}"
+        month: "{{ CRON_MONTH }}"
+        weekday: "{{ CRON_WEEKDAY }}"
+        user: "{{ CRON_USER }}"
+        job: "{{ CRON_JOB}}"
+        state: absent
+      tags:
+       - rollback
 
     - name: Post Deployment Verification
       ansible.builtin.command: crontab -l
-      register: postverification_crontab_output
+      register: cronjobafter
       ignore_errors: true
       tags:
        - deploy
-
-    - name: Show crontab output
-      ansible.builtin.debug:
-        var: postverification_crontab_output.stdout_lines
-      tags:
-       - deploy
-
-    - name: Check if rollback backup file exists
-      ansible.builtin.stat:
-        path: "{{ rollback_backup_file_creation }}"
-      register: rollback_file_stat
-      tags:
        - rollback
 
-    - name: Show result if rollback backup file exists
-      ansible.builtin.debug:
-        msg: "Rollback backup file exists at {{ rollback_backup_file_creation }}"
-      when: rollback_file_stat.stat.exists
-      tags:
-       - rollback
-
-    - name: create a rollback backup file at "{{ rollback_backup_file_creation }}"
-      ansible.builtin.file:
-        path: "{{ rollback_backup_file_creation }}"
-        state: touch
-        mode: '0755'
-      when: not rollback_file_stat.stat.exists
-      tags:
-       - rollback
-
-    - name: Run crontab -l and allow errors
-      ansible.builtin.command: crontab -l
-      register: crontab_output
-      failed_when: false
-      when: not rollback_file_stat.stat.exists
-      tags:
-       - rollback
-
-    - name: Save crontab output to file (even if empty)
+    - name: Save crontab output to file (even if empty) for deployment
       ansible.builtin.copy:
-        content: "{{ crontab_output.stdout | default('# No crontab for this user\n', True) + '\n' }}"
-        dest: "{{ rollback_backup_file_creation }}"
+        content: "{{ cronjobafter.stdout | default('# No crontab for this user\n', True) + '\n' }}"
+        dest: "deploy_crontab_{{ custom_hostname.stdout }}_after.txt"
         mode: '0644'
-      when: not rollback_file_stat.stat.exists
       tags:
-       - rollback
+       - deploy
 
-    - name: Creates a cron job
-      ansible.builtin.cron:
-        name: "Log current date every minute"
-        minute: "*"
-        hour: "*"
-        day: "*"
-        month: "*"
-        weekday: "*"
-        user: root
-        job: "/usr/bin/date >> /tmp/date_log2.txt"
-        state: absent
-      when: not rollback_file_stat.stat.exists
-      tags:
-       - rollback
-
-    - name: Post Rollback Verification
-      ansible.builtin.command: crontab -l
-      register: rollback_postverification_crontab_output
-      ignore_errors: true
-      tags:
-       - rollback
-
-    - name: Show crontab output
-      ansible.builtin.debug:
-        var: rollback_postverification_crontab_output.stdout_lines
+    - name: Save crontab output to file (even if empty) for rollback
+      ansible.builtin.copy:
+        content: "{{ cronjobafter.stdout | default('# No crontab for this user\n', True) + '\n' }}"
+        dest: "rollback_crontab_{{ custom_hostname.stdout }}_after.txt"
+        mode: '0644'
       tags:
        - rollback
