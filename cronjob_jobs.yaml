@@ -1,7 +1,8 @@
 ---
 - name: deployment of cronjobs
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
+  become: true
   vars_files:
     - vars.yaml
 
