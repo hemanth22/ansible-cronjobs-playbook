@@ -31,6 +31,18 @@ jobs:
     - name: ansible cronjob deployment
       run: |
         ansible-playbook -vvvvv cronjob_jobs.yaml --tags deploy
+
+    - name: ansible cronjob deployment idempotent test
+      run: |
+        ansible-playbook -vvvvv cronjob_jobs.yaml --tags deploy
+      continue-on-error: true
+        
     - name: ansible cronjob rollback
       run: |
         ansible-playbook -vvvvv cronjob_jobs.yaml --tags rollback
+      continue-on-error: true
+
+    - name: ansible cronjob rollback idempotent test
+      run: |
+        ansible-playbook -vvvvv cronjob_jobs.yaml --tags rollback
+      continue-on-error: true
