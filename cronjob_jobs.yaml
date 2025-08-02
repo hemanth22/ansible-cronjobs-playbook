@@ -1,7 +1,8 @@
 ---
 - name: deployment of cronjobs
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
+  become: true
   vars_files:
     - vars.yaml
 
@@ -117,7 +118,7 @@
 
     - name: Creates a cron job
       ansible.builtin.cron:
-        name: "Log current date every minute"
+        name: "{{ CRON_JOBNAME }}"
         minute: "{{ CRON_MINUTE }}"
         hour: "{{ CRON_HOUR }}"
         day: "{{ CRON_DAY }}"
@@ -132,7 +133,7 @@
 
     - name: Removes a cron job
       ansible.builtin.cron:
-        name: "Log current date every minute"
+        name: "{{ CRON_JOBNAME }}"
         minute: "{{ CRON_MINUTE }}"
         hour: "{{ CRON_HOUR }}"
         day: "{{ CRON_DAY }}"
