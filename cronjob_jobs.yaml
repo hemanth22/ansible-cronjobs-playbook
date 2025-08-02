@@ -1,8 +1,7 @@
 ---
 - name: deployment of cronjobs
   hosts: localhost
-  gather_facts: false
-  become: true
+  gather_facts: no
   vars_files:
     - vars.yaml
 
@@ -39,6 +38,8 @@
       tags:
        - deploy
        - rollback
+       - deploy_uvt
+       - rollback_uvt
 
     - name: check existence of deployment before file
       ansible.builtin.stat:
@@ -189,3 +190,37 @@
         - rollback_after_stat.stat.exists
       tags:
         - rollback
+
+    - name: sdiff backup deploy_crontab before and after
+      ansible.builtin.shell: |
+        sdiff "{{ backup_dir }}/deploy_crontab_{{ custom_hostname.stdout }}_before.txt" \
+              "{{ backup_dir }}/deploy_crontab_{{ custom_hostname.stdout }}_after.txt"
+      register: deploy_sdiff_output
+      ignore_errors: true
+      tags:
+       - deploy
+       - deploy_uvt
+
+    - name: Show sdiff output for deploy_crontab
+      ansible.builtin.debug:
+        var: "{{ deploy_sdiff_output.stdout_lines | join('\n') }}"
+      tags:
+       - deploy
+       - deploy_uvt
+
+    - name: sdiff backup rollback_crontab before and after
+      ansible.builtin.shell: |
+        sdiff "{{ backup_dir }}/rollback_crontab_{{ custom_hostname.stdout }}_before.txt" \
+              "{{ backup_dir }}/rollback_crontab_{{ custom_hostname.stdout }}_after.txt"
+      register: rollback_sdiff_output
+      ignore_errors: true
+      tags:
+       - rollback
+       - rollback_uvt
+
+    - name: Show sdiff output for rollback_crontab
+      ansible.builtin.debug:
+        var: "{{ rollback_sdiff_output.stdout_lines | join('\n') + '\n'  }}"
+      tags:
+       - rollback
+       - rollback_uvt
