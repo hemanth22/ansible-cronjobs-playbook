@@ -1,0 +1,54 @@
+- defaultTab: nodes
+  description: deployment of cronjob
+  executionEnabled: true
+  id: 6ef5e031-092e-4642-823c-9302926eb53c
+  loglevel: INFO
+  name: cronjob_deployment
+  nodeFilterEditable: false
+  options:
+  - description: Change Request ID for identification of Change
+    label: CHANGE_ID
+    name: CHANGE_ID
+  - description: schedule definition in minutes i.e. * or 0 to 59 minutes
+    label: CRON_MINUTE
+    name: CRON_MINUTE
+  - description: 'schudule defintion in hours, i.e. * or 0 to 23 hours'
+    label: CRON_HOUR
+    name: CRON_HOUR
+  - description: schedule definition in day of month i.e. * or 1-31 day
+    label: CRON_DAY
+    name: CRON_DAY
+  - description: schedule definition in month i.e. * or 1-12 month
+    label: CRON_MONTH
+    name: CRON_MONTH
+  - description: schedule definition for day of week i.e. * or 0-7 (0 or 7 is Sunday)
+    label: CRON_WEEKDAY
+    name: CRON_WEEKDAY
+  - description: schedule definition to run with user
+    label: CRON_USER
+    name: CRON_USER
+  - description: schedule definition to execute the script like example '/usr/bin/date
+      >> /tmp/date_log2.txt'
+    label: CRON_JOB
+    name: CRON_JOB
+  - description: schedule definiton for cron job name like example 'Log current date
+      every minute'
+    label: CRON_JOBNAME
+    name: CRON_JOBNAME
+  - description: 'definiton to povide list of servers in command seperated example
+      host1,host2'
+    label: hosts
+    name: hosts
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: 'ansible-playbook -i "${option.hosts}," /vagrant/ansible_testrun/main.yaml
+        -e CHANGE_ID=${option.CHANGE_ID} -e CRON_MINUTE=${option.CRON_MINUTE} -e CRON_HOUR=${option.CRON_HOUR}
+        -e CRON_DAY=${option.CRON_DAY} -e CRON_MONTH=${option.CRON_MONTH} -e CRON_WEEKDAY=${option.CRON_WEEKDAY}
+        -e CRON_USER=${option.CRON_USER} -e CRON_JOB="${option.CRON_JOB}" -e CRON_JOBNAME="${option.CRON_JOBNAME}"
+        --tags deploy'
+    keepgoing: false
+    strategy: node-first
+  uuid: 6ef5e031-092e-4642-823c-9302926eb53c
